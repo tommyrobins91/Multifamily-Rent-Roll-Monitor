@@ -1,0 +1,323 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Multifamily Rent Roll Monitor</title>
+<style>
+/* Layout: violet masthead with property switcher, KPI strip, property comparison table, three charts, unit mix, full rent roll */
+:root{
+  --bg:#ffffff; --surface:#ffffff; --panel:#EEE6F3; --sub:#F2F2F2;
+  --fg:#000000; --fg2:#404040; --muted:#6D6D6D; --rule:#D6D6D6; --rule-strong:#B8B8B8;
+  --violet:#57068C; --violet-ink:#57068C; --deep:#330662; --mark:#57068C; --mark-dim:#AB82C5; --bench:#B8B8B8;
+  --head-bg:#57068C; --head-fg:#ffffff;
+  --pos:#00837C; --neg:#E00F78; --hl:#EEE6F3;
+  --serif:Georgia,"Times New Roman",serif; --sans:Arial,"Helvetica Neue",Helvetica,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141018; --surface:#1c1622; --panel:#2a1f35; --sub:#221b29;
+  --fg:#f2eef6; --fg2:#c9c1d2; --muted:#9a90a6; --rule:#3a3143; --rule-strong:#5a5064;
+  --violet:#AB82C5; --violet-ink:#C9A9DE; --deep:#330662; --mark:#AB82C5; --mark-dim:#5d3f78; --bench:#6b6375;
+  --head-bg:#3d0b66; --head-fg:#ffffff; --pos:#3cc4b6; --neg:#ff5a9e; --hl:#352645; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141018; --surface:#1c1622; --panel:#2a1f35; --sub:#221b29;
+  --fg:#f2eef6; --fg2:#c9c1d2; --muted:#9a90a6; --rule:#3a3143; --rule-strong:#5a5064;
+  --violet:#AB82C5; --violet-ink:#C9A9DE; --deep:#330662; --mark:#AB82C5; --mark-dim:#5d3f78; --bench:#6b6375;
+  --head-bg:#3d0b66; --head-fg:#ffffff; --pos:#3cc4b6; --neg:#ff5a9e; --hl:#352645; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.45;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:0 40px}
+.mast{background:var(--deep);color:#fff;padding-block:22px 18px}
+.mast .wrap{padding-block:0}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.8;font-weight:700}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(26px,4vw,36px);margin:6px 0 4px;text-wrap:balance}
+.mast p{margin:0;opacity:.85;font-size:13px}
+.switch{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.switch button{font:inherit;font-size:13px;font-weight:700;border:1px solid rgba(255,255,255,.45);background:transparent;color:#fff;padding:7px 14px;border-radius:2px;cursor:pointer}
+.switch button:hover{background:rgba(255,255,255,.12)}
+.switch button[aria-pressed="true"]{background:#fff;color:#330662;border-color:#fff}
+.switch button:focus-visible,th button:focus-visible,select:focus-visible,input:focus-visible,tr[tabindex]:focus-visible{outline:2px solid #8900E1;outline-offset:2px}
+.bar{background:var(--head-bg);color:var(--head-fg);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:7px 12px;margin:30px 0 0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin-top:14px}
+.kpi{background:var(--surface);padding:14px 16px}
+.kpi .l{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg2);font-weight:700}
+.kpi .v{font-family:var(--serif);font-size:28px;font-weight:700;color:var(--violet-ink);margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+.note{font-size:12px;color:var(--muted);margin:8px 0 0}
+.tscroll{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13px}
+th{background:var(--head-bg);color:var(--head-fg);font-weight:700;text-align:right;padding:8px 10px;white-space:nowrap;border-bottom:2px solid var(--violet)}
+th:first-child,td:first-child{text-align:left}
+th.l,td.l{text-align:left}
+td{padding:7px 10px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--panel) 45%,transparent)}
+tr.total td{font-weight:700;background:var(--sub)!important;border-top:2px solid var(--violet)}
+tr.sel td{background:var(--hl)!important;font-weight:700;color:var(--violet-ink)}
+tr[tabindex]{cursor:pointer}
+tr[tabindex]:hover td{background:var(--hl)}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th button .arr{opacity:.6;font-size:10px}
+.neg{color:var(--neg)}.pos{color:var(--pos)}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:2px;letter-spacing:.03em}
+.pill.o{background:var(--panel);color:var(--violet-ink)}
+.pill.v{background:transparent;color:var(--neg);border:1px solid var(--neg)}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:24px;margin-top:14px}
+.chart{min-width:0}
+.chart h3{font-family:var(--serif);font-size:17px;margin:0 0 2px;color:var(--fg);text-wrap:balance}
+.chart .sub{font-size:12px;color:var(--fg2);margin:0 0 8px}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.legend{display:flex;gap:16px;font-size:12px;color:var(--fg2);margin-bottom:4px;flex-wrap:wrap}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:5px}
+.wide{grid-column:1/-1}
+.src{font-size:11px;color:var(--muted);margin-top:6px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.controls label{font-size:12px;color:var(--fg2);font-weight:700}
+select,input[type=search]{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--rule-strong);background:var(--surface);color:var(--fg);border-radius:2px}
+input[type=search]{min-width:0;width:220px;max-width:100%}
+.count{font-size:12px;color:var(--muted);margin-left:auto}
+.rr{max-height:560px;overflow:auto;border-bottom:1px solid var(--rule)}
+.rr th{position:sticky;top:0;z-index:1}
+#tip{position:fixed;pointer-events:none;background:var(--surface);color:var(--fg);border:1px solid var(--rule-strong);padding:8px 10px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.18);z-index:10;min-width:150px;font-variant-numeric:tabular-nums}
+#tip b{display:block;font-size:12px;margin-bottom:3px;color:var(--violet-ink)}
+#tip .r{display:flex;justify-content:space-between;gap:14px}
+footer{margin-top:34px;padding-top:12px;border-top:1px solid var(--rule);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+@media (max-width:520px){.wrap{padding-inline:16px}.kpi .v{font-size:24px}}
+</style>
+
+<header class="mast"><div class="wrap">
+  <div class="eyebrow">Asset management review &middot; Rent roll</div>
+  <h1 id="h1">Multifamily Portfolio</h1>
+  <p id="hsub"></p>
+  <div class="switch" id="switch" role="group" aria-label="Filter by property"></div>
+</div></header>
+
+<main class="wrap">
+  <div class="kpis" id="kpis"></div>
+  <p class="note">Economic occupancy = in-place rent on occupied units &divide; market rent on all units. Loss-to-lease is market minus in-place rent on occupied units, net of units leased above market.</p>
+
+  <div class="bar">Property comparison</div>
+  <div class="tscroll"><table id="ptab"></table></div>
+  <p class="src">Click a row to focus the dashboard on that property. Monthly figures unless noted.</p>
+
+  <div class="bar">Occupancy, pricing and rollover</div>
+  <div class="charts">
+    <div class="chart"><h3 id="c1t"></h3><p class="sub">Physical occupancy by property (%)</p><div id="c1"></div></div>
+    <div class="chart"><h3 id="c2t"></h3><p class="sub">Average monthly rent by unit type, occupied units ($)</p>
+      <div class="legend"><span><i style="background:var(--mark)"></i>In-place</span><span><i style="background:var(--bench)"></i>Market</span></div><div id="c2"></div></div>
+    <div class="chart wide"><h3 id="c3t"></h3><p class="sub">Leases expiring per month (units). Hover a bar for rent at risk and mark-to-market.</p><div id="c3"></div></div>
+  </div>
+  <p class="src">Source: Property_Data_Combined.xlsx, Rent Roll tab. Lease terms measured from Oct 13, 2026.</p>
+
+  <div class="bar">Unit mix</div>
+  <div class="tscroll"><table id="mtab"></table></div>
+
+  <div class="bar">Rent roll detail</div>
+  <div class="controls">
+    <label for="fstat">Show</label>
+    <select id="fstat">
+      <option value="all">All units</option><option value="O">Occupied</option><option value="V">Vacant</option>
+      <option value="below">Below market</option><option value="above">Above market</option><option value="exp6">Expiring in 6 months</option>
+    </select>
+    <label for="q">Search</label>
+    <input type="search" id="q" placeholder="Tenant, unit or type">
+    <span class="count" id="count"></span>
+  </div>
+  <div class="rr tscroll"><table id="rtab"></table></div>
+
+  <footer><span>NYU SPS Schack Institute of Real Estate &middot; Portfolio analysis</span><span>Source: Property_Data_Combined.xlsx (240 units, 5 properties)</span></footer>
+</main>
+<div id="tip" hidden></div>
+
+<script>
+const RAW=[["Maple Court",101,"2BR",1016,"O","Quinn Patel","2025-08-02","2026-12-03",1495,1645],["Maple Court",102,"Studio",520,"O","Jamie Patel","2026-02-03","2026-11-22",960,1055],["Maple Court",103,"Studio",497,"O","Drew Lee","2026-07-12","2027-02-18",1090,1055],["Maple Court",104,"3BR",1273,"O","Taylor Johnson","2026-01-27","2026-12-01",1875,1915],["Maple Court",105,"1BR",703,"O","Drew Garcia","2025-02-03","2027-08-26",1320,1350],["Maple Court",106,"1BR",753,"O","Cameron Smith","2025-02-27","2026-12-18",1320,1350],["Maple Court",107,"3BR",1243,"O","Morgan Walker","2025-05-22","2028-01-22",1820,1915],["Maple Court",108,"1BR",726,"O","Reese Brown","2025-11-07","2028-03-04",1380,1350],["Maple Court",109,"Studio",552,"O","Taylor Young","2025-07-09","2027-04-01",1060,1055],["Maple Court",110,"3BR",1283,"O","Riley Martinez","2026-06-23","2027-09-01",1815,1915],["Maple Court",111,"3BR",1227,"O","Drew Patel","2026-06-07","2027-07-18",1850,1915],["Maple Court",112,"2BR",1014,"O","Logan Lee","2025-06-11","2027-08-02",1645,1645],["Maple Court",201,"Studio",517,"O","Avery Nguyen","2025-09-12","2027-04-05",1040,1055],["Maple Court",202,"2BR",980,"O","Parker Brown","2025-12-31","2027-11-26",1570,1645],["Maple Court",203,"1BR",760,"O","Parker Lopez","2025-02-25","2027-07-26",1380,1350],["Maple Court",204,"2BR",992,"O","Taylor Patel","2025-09-08","2027-11-08",1700,1645],["Maple Court",205,"1BR",723,"O","Cameron Garcia","2026-01-15","2026-10-27",1305,1350],["Maple Court",206,"2BR",1035,"O","Riley Garcia","2025-07-08","2027-10-28",1620,1645],["Maple Court",207,"Studio",551,"O","Jamie Patel","2025-02-15","2027-11-20",1010,1055],["Maple Court",208,"3BR",1226,"O","Jordan Kim","2026-07-04","2027-05-16",1840,1915],["Maple Court",209,"Studio",499,"O","Cameron Nguyen","2026-04-09","2027-01-26",1090,1055],["Maple Court",210,"1BR",750,"O","Cameron Kim","2026-04-11","2027-06-30",1395,1350],["Maple Court",211,"Studio",508,"O","Casey Patel","2025-04-29","2028-02-04",1020,1055],["Maple Court",212,"Studio",492,"O","Taylor Davis","2025-12-13","2028-02-17",1070,1055],["Maple Court",301,"1BR",757,"V",null,null,null,0,1350],["Maple Court",302,"2BR",981,"O","Casey Lee","2025-03-03","2026-11-11",1655,1645],["Maple Court",303,"2BR",1034,"O","Quinn Davis","2026-03-23","2027-10-14",1660,1645],["Maple Court",304,"2BR",999,"O","Parker Lopez","2024-12-22","2027-05-02",1665,1645],["Maple Court",305,"1BR",750,"O","Sam Johnson","2025-09-11","2026-11-13",1400,1350],["Maple Court",306,"2BR",1014,"O","Logan Clark","2024-12-30","2027-10-02",1585,1645],["Maple Court",307,"2BR",1031,"O","Riley Smith","2026-05-29","2027-06-04",1590,1645],["Maple Court",308,"Studio",505,"O","Jordan Hall","2024-11-11","2027-10-02",1070,1055],["Maple Court",309,"3BR",1262,"O","Jamie Walker","2026-02-18","2028-02-16",1960,1915],["Maple Court",310,"Studio",510,"O","Jordan Clark","2025-08-01","2028-02-01",1010,1055],["Maple Court",311,"1BR",693,"V",null,null,null,0,1350],["Maple Court",312,"1BR",734,"O","Cameron Brown","2025-05-22","2027-03-13",1330,1350],["Maple Court",401,"1BR",703,"O","Reese Lee","2026-04-29","2026-11-05",1220,1350],["Maple Court",402,"1BR",754,"O","Morgan Johnson","2026-02-23","2027-05-19",1220,1350],["Maple Court",403,"1BR",697,"O","Parker Garcia","2025-10-12","2027-07-07",1320,1350],["Maple Court",404,"2BR",986,"O","Logan Davis","2024-11-01","2027-12-19",1670,1645],["Maple Court",405,"1BR",709,"O","Cameron Nguyen","2026-08-22","2028-01-08",1360,1350],["Maple Court",406,"1BR",756,"O","Riley Lee","2024-12-16","2027-02-15",1320,1350],["Maple Court",407,"3BR",1232,"O","Casey Nguyen","2026-05-25","2026-12-12",1790,1915],["Maple Court",408,"3BR",1285,"O","Quinn Martinez","2026-07-08","2028-01-11",1810,1915],["Harbor Point",101,"1BR",721,"O","Avery Davis","2025-06-04","2028-03-18",1580,1620],["Harbor Point",102,"2BR",995,"V",null,null,null,0,1975],["Harbor Point",103,"3BR",1250,"O","Jordan Lee","2026-05-09","2027-11-20",2210,2300],["Harbor Point",104,"3BR",1266,"O","Taylor Clark","2025-11-04","2027-02-17",2360,2300],["Harbor Point",105,"1BR",752,"O","Jordan Lopez","2026-04-23","2028-02-05",1510,1620],["Harbor Point",106,"1BR",718,"V",null,null,null,0,1620],["Harbor Point",107,"1BR",730,"O","Morgan Kim","2025-04-01","2027-12-02",1535,1620],["Harbor Point",108,"Studio",492,"O","Avery Clark","2026-08-22","2027-09-26",1235,1265],["Harbor Point",109,"3BR",1249,"O","Jordan Patel","2024-12-11","2027-08-13",2235,2300],["Harbor Point",110,"Studio",506,"O","Taylor Johnson","2025-12-06","2026-11-24",1300,1265],["Harbor Point",111,"3BR",1283,"O","Logan Davis","2025-12-20","2027-12-04",2120,2300],["Harbor Point",112,"2BR",972,"O","Jordan Johnson","2026-07-14","2027-04-20",1895,1975],["Harbor Point",201,"Studio",548,"O","Parker Patel","2026-06-17","2027-05-30",1150,1265],["Harbor Point",202,"Studio",506,"O","Casey Martinez","2025-02-21","2027-12-16",1305,1265],["Harbor Point",203,"Studio",513,"O","Casey Nguyen","2026-01-09","2027-02-04",1310,1265],["Harbor Point",204,"1BR",729,"V",null,null,null,0,1620],["Harbor Point",205,"1BR",722,"O","Sam Nguyen","2025-04-16","2027-04-15",1520,1620],["Harbor Point",206,"Studio",547,"O","Morgan Young","2025-04-11","2027-04-27",1230,1265],["Harbor Point",207,"Studio",540,"O","Quinn Hall","2024-11-14","2027-12-31",1255,1265],["Harbor Point",208,"2BR",987,"O","Logan Clark","2026-01-18","2027-09-30",1830,1975],["Harbor Point",209,"3BR",1226,"V",null,null,null,0,2300],["Harbor Point",210,"1BR",738,"O","Alex Patel","2024-12-09","2027-07-03",1555,1620],["Harbor Point",211,"2BR",1027,"O","Taylor Johnson","2025-11-14","2026-11-30",1905,1975],["Harbor Point",212,"Studio",517,"O","Logan Johnson","2025-10-09","2027-09-11",1180,1265],["Harbor Point",301,"2BR",995,"O","Casey Davis","2025-10-02","2027-11-09",1800,1975],["Harbor Point",302,"1BR",741,"O","Jordan Garcia","2026-09-05","2027-01-16",1520,1620],["Harbor Point",303,"Studio",557,"O","Jordan Martinez","2025-11-08","2027-08-22",1250,1265],["Harbor Point",304,"1BR",709,"O","Reese Brown","2025-01-08","2027-11-17",1630,1620],["Harbor Point",305,"2BR",1035,"O","Parker Clark","2024-11-21","2027-03-12",1790,1975],["Harbor Point",306,"3BR",1222,"O","Sam Davis","2025-04-11","2027-03-06",2365,2300],["Harbor Point",307,"1BR",747,"O","Jordan Lopez","2026-07-30","2027-02-28",1600,1620],["Harbor Point",308,"Studio",498,"O","Alex Brown","2024-12-08","2027-06-22",1225,1265],["Harbor Point",309,"Studio",523,"O","Jordan Hall","2026-07-05","2028-02-12",1185,1265],["Harbor Point",310,"1BR",738,"O","Avery Brown","2026-02-12","2027-06-08",1625,1620],["Harbor Point",311,"Studio",499,"O","Drew Smith","2025-11-20","2026-12-01",1250,1265],["Harbor Point",312,"1BR",751,"O","Taylor Nguyen","2024-11-12","2027-08-22",1600,1620],["Harbor Point",401,"Studio",556,"O","Casey Clark","2026-06-01","2027-05-25",1260,1265],["Harbor Point",402,"2BR",1009,"O","Quinn Smith","2025-05-21","2027-02-13",2050,1975],["Harbor Point",403,"Studio",492,"V",null,null,null,0,1265],["Harbor Point",404,"2BR",996,"O","Jamie Smith","2025-04-10","2028-01-18",2050,1975],["Harbor Point",405,"Studio",555,"O","Taylor Martinez","2026-04-18","2027-07-10",1305,1265],["Harbor Point",406,"2BR",1020,"O","Logan Brown","2025-09-02","2027-06-08",1915,1975],["Harbor Point",407,"Studio",543,"O","Reese Garcia","2025-04-25","2028-01-19",1210,1265],["Harbor Point",408,"2BR",1020,"O","Sam Kim","2026-05-10","2027-09-19",1780,1975],["Harbor Point",409,"Studio",515,"V",null,null,null,0,1265],["Harbor Point",410,"Studio",499,"O","Jamie Lopez","2025-11-18","2027-07-01",1205,1265],["Harbor Point",411,"2BR",1005,"V",null,null,null,0,1975],["Harbor Point",412,"Studio",524,"O","Taylor Smith","2026-07-20","2027-08-03",1250,1265],["Harbor Point",501,"3BR",1223,"O","Jamie Young","2026-02-28","2027-11-01",2325,2300],["Harbor Point",502,"3BR",1272,"O","Alex Young","2025-02-20","2027-05-11",2300,2300],["Harbor Point",503,"3BR",1290,"O","Logan Young","2026-04-22","2027-08-04",2225,2300],["Harbor Point",504,"1BR",723,"O","Casey Clark","2025-07-13","2027-10-01",1520,1620],["Cedar Ridge",101,"3BR",1241,"O","Jamie Patel","2025-11-06","2028-02-21",1640,1675],["Cedar Ridge",102,"1BR",732,"O","Avery Young","2025-04-16","2028-03-07",1155,1180],["Cedar Ridge",103,"3BR",1231,"O","Taylor Kim","2025-02-27","2027-04-30",1565,1675],["Cedar Ridge",104,"2BR",1022,"O","Reese Hall","2025-12-20","2027-05-09",1475,1440],["Cedar Ridge",105,"3BR",1227,"O","Riley Walker","2025-03-23","2027-05-18",1595,1675],["Cedar Ridge",106,"3BR",1247,"O","Quinn Lee","2025-09-07","2027-02-20",1670,1675],["Cedar Ridge",107,"Studio",529,"O","Avery Lopez","2025-12-30","2027-11-12",880,920],["Cedar Ridge",108,"Studio",499,"O","Avery Nguyen","2025-07-02","2028-02-11",955,920],["Cedar Ridge",109,"3BR",1233,"O","Morgan Walker","2025-03-19","2028-02-06",1735,1675],["Cedar Ridge",110,"1BR",748,"O","Reese Clark","2025-03-25","2027-02-03",1220,1180],["Cedar Ridge",111,"Studio",494,"O","Morgan Martinez","2026-08-01","2026-10-16",930,920],["Cedar Ridge",112,"2BR",984,"O","Jamie Clark","2024-12-08","2027-06-29",1400,1440],["Cedar Ridge",201,"Studio",490,"O","Morgan Walker","2025-03-22","2027-04-29",880,920],["Cedar Ridge",202,"Studio",521,"O","Drew Hall","2025-05-27","2027-07-27",950,920],["Cedar Ridge",203,"3BR",1259,"O","Jamie Clark","2025-02-27","2027-06-24",1515,1675],["Cedar Ridge",204,"Studio",544,"O","Morgan Lee","2025-04-18","2027-12-19",840,920],["Cedar Ridge",205,"2BR",1020,"O","Riley Lee","2026-08-07","2027-09-26",1440,1440],["Cedar Ridge",206,"1BR",729,"O","Avery Smith","2025-11-15","2028-03-14",1075,1180],["Cedar Ridge",207,"1BR",753,"O","Casey Patel","2026-01-27","2027-07-13",1190,1180],["Cedar Ridge",208,"1BR",708,"O","Alex Martinez","2025-05-02","2027-12-16",1210,1180],["Cedar Ridge",209,"3BR",1243,"O","Reese Nguyen","2026-08-17","2027-03-09",1605,1675],["Cedar Ridge",210,"3BR",1262,"O","Logan Garcia","2025-10-24","2027-02-07",1740,1675],["Cedar Ridge",211,"1BR",738,"O","Drew Clark","2025-03-22","2028-02-05",1065,1180],["Cedar Ridge",212,"2BR",1026,"V",null,null,null,0,1440],["Cedar Ridge",301,"1BR",705,"O","Jamie Young","2026-06-22","2027-07-28",1075,1180],["Cedar Ridge",302,"1BR",715,"O","Reese Brown","2025-10-29","2027-12-31",1075,1180],["Cedar Ridge",303,"2BR",1030,"O","Reese Young","2025-06-10","2027-04-30",1360,1440],["Cedar Ridge",304,"Studio",498,"O","Alex Brown","2025-12-31","2027-12-03",835,920],["Cedar Ridge",305,"Studio",495,"O","Riley Martinez","2026-07-08","2027-09-27",875,920],["Cedar Ridge",306,"2BR",978,"O","Reese Walker","2025-10-21","2027-07-24",1355,1440],["Cedar Ridge",307,"Studio",539,"O","Avery Walker","2026-05-24","2028-02-13",920,920],["Cedar Ridge",308,"2BR",1008,"O","Taylor Nguyen","2025-04-23","2027-02-27",1485,1440],["Cedar Ridge",309,"1BR",700,"O","Sam Walker","2025-10-10","2027-09-07",1140,1180],["Cedar Ridge",310,"1BR",751,"O","Drew Nguyen","2026-03-31","2027-06-25",1130,1180],["Cedar Ridge",311,"2BR",980,"O","Casey Martinez","2025-07-01","2027-01-30",1495,1440],["Cedar Ridge",312,"1BR",748,"O","Taylor Lopez","2025-04-18","2028-01-15",1090,1180],["Cedar Ridge",401,"1BR",725,"O","Casey Johnson","2024-10-30","2027-02-16",1190,1180],["Cedar Ridge",402,"2BR",1000,"O","Taylor Smith","2025-12-18","2027-05-06",1385,1440],["Lakeview Commons",101,"1BR",721,"O","Jamie Johnson","2025-01-26","2027-04-25",1615,1710],["Lakeview Commons",102,"1BR",750,"O","Jordan Nguyen","2026-05-31","2028-02-02",1775,1710],["Lakeview Commons",103,"1BR",696,"O","Morgan Patel","2025-08-24","2026-11-25",1750,1710],["Lakeview Commons",104,"1BR",712,"O","Riley Davis","2025-01-21","2027-05-01",1760,1710],["Lakeview Commons",105,"3BR",1264,"O","Cameron Clark","2024-10-30","2026-10-21",2225,2430],["Lakeview Commons",106,"1BR",716,"O","Casey Nguyen","2025-09-27","2027-03-08",1550,1710],["Lakeview Commons",107,"Studio",516,"O","Casey Patel","2025-07-19","2027-10-30",1235,1335],["Lakeview Commons",108,"Studio",540,"O","Jordan Walker","2025-02-26","2028-02-22",1215,1335],["Lakeview Commons",109,"1BR",726,"O","Casey Lopez","2026-06-09","2027-03-31",1635,1710],["Lakeview Commons",110,"2BR",1023,"O","Logan Kim","2026-07-20","2027-08-30",2095,2085],["Lakeview Commons",111,"3BR",1220,"O","Jamie Smith","2025-09-03","2027-05-04",2320,2430],["Lakeview Commons",112,"3BR",1274,"V",null,null,null,0,2430],["Lakeview Commons",201,"Studio",491,"O","Taylor Garcia","2025-07-22","2027-10-23",1290,1335],["Lakeview Commons",202,"Studio",537,"O","Cameron Young","2024-11-23","2027-11-25",1220,1335],["Lakeview Commons",203,"1BR",703,"O","Logan Patel","2025-11-24","2027-03-29",1665,1710],["Lakeview Commons",204,"3BR",1281,"O","Alex Young","2026-02-20","2027-08-19",2230,2430],["Lakeview Commons",205,"2BR",990,"O","Reese Martinez","2024-11-28","2027-11-16",1900,2085],["Lakeview Commons",206,"1BR",717,"O","Taylor Martinez","2024-12-20","2027-05-03",1740,1710],["Lakeview Commons",207,"Studio",521,"O","Jordan Garcia","2025-03-29","2027-03-24",1275,1335],["Lakeview Commons",208,"1BR",739,"O","Riley Patel","2025-02-12","2026-11-23",1700,1710],["Lakeview Commons",209,"3BR",1251,"O","Casey Martinez","2024-12-07","2027-08-24",2410,2430],["Lakeview Commons",210,"3BR",1220,"O","Taylor Nguyen","2025-08-30","2028-01-15",2360,2430],["Lakeview Commons",211,"3BR",1271,"O","Sam Brown","2025-06-10","2028-01-27",2470,2430],["Lakeview Commons",212,"Studio",554,"O","Sam Brown","2025-09-08","2027-12-29",1270,1335],["Lakeview Commons",301,"Studio",555,"O","Riley Walker","2026-04-30","2027-01-07",1375,1335],["Lakeview Commons",302,"Studio",493,"O","Sam Garcia","2025-04-12","2027-11-05",1325,1335],["Lakeview Commons",303,"Studio",504,"V",null,null,null,0,1335],["Lakeview Commons",304,"1BR",711,"O","Logan Walker","2025-04-25","2027-08-05",1770,1710],["Lakeview Commons",305,"1BR",725,"O","Logan Martinez","2025-09-16","2027-06-30",1575,1710],["Lakeview Commons",306,"3BR",1284,"O","Casey Martinez","2025-04-14","2028-02-18",2260,2430],["Lakeview Commons",307,"1BR",725,"O","Taylor Lee","2026-08-04","2027-05-06",1585,1710],["Lakeview Commons",308,"2BR",1016,"O","Quinn Nguyen","2026-03-22","2027-07-12",1910,2085],["Lakeview Commons",309,"3BR",1270,"O","Quinn Lee","2025-01-25","2027-01-30",2275,2430],["Lakeview Commons",310,"2BR",1026,"O","Sam Patel","2025-08-29","2027-03-13",1980,2085],["Lakeview Commons",311,"1BR",730,"O","Casey Johnson","2026-07-23","2027-08-14",1735,1710],["Lakeview Commons",312,"Studio",543,"O","Drew Lopez","2026-01-27","2027-03-16",1255,1335],["Lakeview Commons",401,"2BR",972,"O","Drew Nguyen","2026-04-28","2028-02-27",1945,2085],["Lakeview Commons",402,"Studio",518,"O","Riley Davis","2025-09-12","2027-08-22",1220,1335],["Lakeview Commons",403,"3BR",1280,"O","Cameron Hall","2025-01-15","2027-02-28",2255,2430],["Lakeview Commons",404,"1BR",708,"O","Jordan Lee","2026-01-04","2027-03-16",1645,1710],["Lakeview Commons",405,"2BR",1014,"O","Parker Davis","2025-12-14","2026-10-26",1895,2085],["Lakeview Commons",406,"3BR",1225,"O","Logan Nguyen","2025-03-29","2028-03-02",2270,2430],["Lakeview Commons",407,"Studio",503,"O","Alex Young","2025-07-22","2027-04-23",1245,1335],["Lakeview Commons",408,"Studio",554,"O","Morgan Davis","2024-11-07","2027-05-04",1230,1335],["Lakeview Commons",409,"3BR",1226,"O","Casey Lee","2026-03-16","2028-03-18",2290,2430],["Lakeview Commons",410,"3BR",1279,"O","Reese Young","2026-09-04","2027-11-03",2475,2430],["Lakeview Commons",411,"Studio",519,"O","Jordan Johnson","2025-06-04","2027-04-12",1245,1335],["Lakeview Commons",412,"Studio",545,"O","Quinn Lee","2025-12-15","2026-12-07",1250,1335],["Lakeview Commons",501,"2BR",1003,"O","Alex Garcia","2026-01-31","2027-01-10",2135,2085],["Lakeview Commons",502,"1BR",739,"O","Riley Smith","2026-02-15","2027-03-27",1720,1710],["Lakeview Commons",503,"2BR",970,"O","Quinn Clark","2025-08-18","2028-02-07",2015,2085],["Lakeview Commons",504,"Studio",499,"O","Jamie Martinez","2026-01-14","2027-08-26",1350,1335],["Lakeview Commons",505,"1BR",734,"O","Logan Garcia","2026-08-14","2027-02-06",1565,1710],["Lakeview Commons",506,"1BR",695,"O","Drew Lee","2026-08-10","2026-11-26",1570,1710],["Lakeview Commons",507,"Studio",498,"O","Parker Davis","2026-07-05","2027-10-22",1240,1335],["Lakeview Commons",508,"3BR",1231,"O","Alex Hall","2026-02-12","2027-05-11",2225,2430],["Lakeview Commons",509,"2BR",1007,"O","Drew Smith","2026-04-28","2027-01-23",2110,2085],["Lakeview Commons",510,"2BR",976,"O","Logan Johnson","2025-12-17","2026-11-05",1980,2085],["Lakeview Commons",511,"2BR",1034,"V",null,null,null,0,2085],["Lakeview Commons",512,"3BR",1286,"O","Alex Lopez","2024-12-16","2026-11-15",2455,2430],["Union Square Lofts",101,"Studio",526,"O","Parker Patel","2026-07-23","2027-05-24",1475,1475],["Union Square Lofts",102,"1BR",690,"O","Sam Nguyen","2025-03-23","2027-05-09",1775,1890],["Union Square Lofts",103,"2BR",1035,"O","Cameron Kim","2025-04-25","2027-04-21",2385,2305],["Union Square Lofts",104,"2BR",1033,"O","Reese Smith","2026-04-01","2027-08-01",2340,2305],["Union Square Lofts",105,"1BR",703,"O","Reese Davis","2024-11-28","2027-01-05",1830,1890],["Union Square Lofts",106,"2BR",1024,"O","Reese Patel","2025-07-27","2027-11-23",2360,2305],["Union Square Lofts",107,"Studio",511,"O","Quinn Davis","2025-11-04","2027-07-11",1415,1475],["Union Square Lofts",108,"3BR",1249,"V",null,null,null,0,2685],["Union Square Lofts",109,"3BR",1239,"O","Riley Davis","2025-01-10","2026-11-18",2545,2685],["Union Square Lofts",110,"3BR",1252,"O","Reese Walker","2025-10-14","2027-04-06",2590,2685],["Union Square Lofts",111,"1BR",709,"O","Casey Johnson","2025-05-25","2027-06-15",1835,1890],["Union Square Lofts",112,"1BR",731,"V",null,null,null,0,1890],["Union Square Lofts",201,"2BR",991,"O","Reese Patel","2025-10-10","2027-04-26",2160,2305],["Union Square Lofts",202,"Studio",545,"O","Reese Johnson","2026-04-09","2027-03-15",1490,1475],["Union Square Lofts",203,"2BR",1029,"O","Logan Lopez","2024-11-26","2027-02-01",2165,2305],["Union Square Lofts",204,"Studio",549,"O","Drew Johnson","2025-06-20","2027-05-30",1430,1475],["Union Square Lofts",205,"Studio",545,"O","Morgan Young","2024-12-31","2027-12-03",1330,1475],["Union Square Lofts",206,"3BR",1278,"O","Drew Patel","2024-11-11","2027-06-06",2670,2685],["Union Square Lofts",207,"3BR",1271,"O","Morgan Walker","2024-12-06","2027-01-23",2755,2685],["Union Square Lofts",208,"1BR",742,"O","Cameron Hall","2025-07-04","2028-02-21",1820,1890],["Union Square Lofts",209,"1BR",703,"O","Avery Young","2025-10-10","2026-10-25",1805,1890],["Union Square Lofts",210,"Studio",534,"O","Morgan Davis","2026-01-30","2027-03-28",1475,1475],["Union Square Lofts",211,"Studio",537,"O","Quinn Nguyen","2025-05-31","2027-05-12",1475,1475],["Union Square Lofts",212,"2BR",1035,"O","Taylor Lopez","2025-05-31","2027-05-18",2395,2305],["Union Square Lofts",301,"Studio",538,"O","Casey Johnson","2024-12-21","2027-10-14",1460,1475],["Union Square Lofts",302,"3BR",1265,"O","Drew Clark","2026-06-26","2027-12-17",2760,2685],["Union Square Lofts",303,"2BR",1020,"O","Quinn Smith","2025-11-04","2027-11-29",2380,2305],["Union Square Lofts",304,"3BR",1280,"O","Drew Smith","2026-05-01","2026-12-24",2720,2685],["Union Square Lofts",305,"1BR",742,"O","Parker Hall","2026-04-14","2027-10-11",1875,1890],["Union Square Lofts",306,"3BR",1290,"V",null,null,null,0,2685],["Union Square Lofts",307,"1BR",738,"O","Morgan Johnson","2025-05-18","2027-10-13",1910,1890],["Union Square Lofts",308,"2BR",993,"V",null,null,null,0,2305],["Union Square Lofts",309,"3BR",1281,"O","Casey Kim","2025-11-27","2027-10-16",2510,2685],["Union Square Lofts",310,"3BR",1258,"O","Riley Garcia","2024-11-27","2027-01-10",2665,2685],["Union Square Lofts",311,"3BR",1264,"O","Taylor Davis","2025-02-09","2027-09-12",2710,2685],["Union Square Lofts",312,"Studio",502,"O","Casey Martinez","2026-02-08","2026-12-27",1465,1475],["Union Square Lofts",401,"1BR",741,"O","Taylor Smith","2026-03-04","2028-01-20",1795,1890],["Union Square Lofts",402,"1BR",728,"O","Logan Davis","2024-12-27","2027-01-15",1880,1890],["Union Square Lofts",403,"1BR",704,"O","Avery Lee","2026-02-04","2027-01-03",1895,1890],["Union Square Lofts",404,"Studio",551,"O","Quinn Nguyen","2026-01-14","2027-03-06",1425,1475],["Union Square Lofts",405,"3BR",1220,"O","Quinn Martinez","2025-04-25","2027-06-24",2605,2685],["Union Square Lofts",406,"1BR",737,"O","Parker Brown","2025-05-19","2028-03-07",1875,1890],["Union Square Lofts",407,"3BR",1223,"O","Drew Lee","2026-06-25","2027-04-17",2655,2685],["Union Square Lofts",408,"Studio",508,"O","Avery Walker","2025-10-07","2027-01-19",1435,1475],["Union Square Lofts",409,"Studio",536,"O","Parker Lee","2025-07-12","2027-02-21",1395,1475],["Union Square Lofts",410,"2BR",1002,"O","Riley Lopez","2025-03-21","2027-05-18",2165,2305]];
+const ASOF=new Date('2026-10-13T00:00:00');
+const rows=RAW.map(r=>({p:r[0],u:r[1],t:r[2],sf:r[3],st:r[4],ten:r[5],ls:r[6],le:r[7],cur:r[8],mkt:r[9]}));
+rows.forEach(r=>{r.var=r.st==='O'?r.cur-r.mkt:null;r.mo=r.le?monthsBetween(ASOF,new Date(r.le+'T00:00:00')):null});
+const PROPS=[...new Set(rows.map(r=>r.p))];
+const TYPES=['Studio','1BR','2BR','3BR'];
+let sel='All', sortKey='p', sortDir=1;
+try{const s=localStorage.getItem('rr-prop');if(s&&(s==='All'||PROPS.includes(s)))sel=s}catch(e){}
+
+function monthsBetween(a,b){return (b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth())+((b.getDate()-a.getDate())/30)}
+const $=id=>document.getElementById(id);
+const fmt$=n=>'$'+Math.round(n).toLocaleString('en-US');
+const fmtK=n=>Math.abs(n)>=1e6?'$'+(n/1e6).toFixed(2)+'M':'$'+(n/1e3).toFixed(1)+'K';
+const pct=(n,d=1)=>(n*100).toFixed(d)+'%';
+const paren=n=>n<0?'('+fmt$(-n)+')':fmt$(n);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function stats(rs){
+  const occ=rs.filter(r=>r.st==='O'), vac=rs.filter(r=>r.st==='V');
+  const sum=(a,f)=>a.reduce((s,r)=>s+f(r),0);
+  const curOcc=sum(occ,r=>r.cur), mktOcc=sum(occ,r=>r.mkt), mktAll=sum(rs,r=>r.mkt), sfOcc=sum(occ,r=>r.sf);
+  const exp6=occ.filter(r=>r.mo<=6);
+  return {n:rs.length,occ:occ.length,vac:vac.length,occPct:rs.length?occ.length/rs.length:0,
+    econ:mktAll?curOcc/mktAll:0,avgCur:occ.length?curOcc/occ.length:0,avgMkt:occ.length?mktOcc/occ.length:0,
+    psf:sfOcc?curOcc/sfOcc:0,avgSf:rs.length?sum(rs,r=>r.sf)/rs.length:0,
+    ltl:mktOcc-curOcc,ltlPct:mktOcc?(mktOcc-curOcc)/mktOcc:0,vacLoss:sum(vac,r=>r.mkt),gpr:mktAll,curOcc,
+    below:occ.filter(r=>r.cur<r.mkt).length,above:occ.filter(r=>r.cur>r.mkt).length,
+    exp6:exp6.length,exp6Rent:sum(exp6,r=>r.cur),exp6Mtm:sum(exp6,r=>r.mkt-r.cur)};
+}
+const scope=()=>sel==='All'?rows:rows.filter(r=>r.p===sel);
+
+/* ---------- switcher ---------- */
+function renderSwitch(){
+  $('switch').innerHTML=['All',...PROPS].map(p=>`<button type="button" data-p="${esc(p)}" aria-pressed="${p===sel}">${p==='All'?'All properties':esc(p)}</button>`).join('');
+  $('switch').querySelectorAll('button').forEach(b=>b.onclick=()=>setSel(b.dataset.p));
+}
+function setSel(p){sel=p;try{localStorage.setItem('rr-prop',p)}catch(e){};render()}
+
+/* ---------- KPIs ---------- */
+function renderKpis(){
+  const s=stats(scope());
+  $('h1').textContent=sel==='All'?'Multifamily Portfolio':sel;
+  $('hsub').textContent=sel==='All'
+    ? `${PROPS.length} properties · ${s.n} units · ${fmt$(s.gpr)}/mo gross potential rent at market`
+    : `${s.n} units · avg ${Math.round(s.avgSf).toLocaleString()} SF · ${fmt$(s.gpr)}/mo gross potential rent at market`;
+  const k=[
+    ['Physical occupancy',pct(s.occPct),`${s.occ} of ${s.n} units leased`],
+    ['Economic occupancy',pct(s.econ),`${fmt$(s.curOcc)} of ${fmt$(s.gpr)}/mo`],
+    ['Avg in-place rent',fmt$(s.avgCur),`vs ${fmt$(s.avgMkt)} market · $${s.psf.toFixed(2)}/SF`],
+    ['Loss-to-lease',pct(s.ltlPct),`${fmt$(s.ltl)}/mo · ${fmtK(s.ltl*12)}/yr`],
+    ['Vacancy loss',fmt$(s.vacLoss),`${s.vac} vacant units · ${fmtK(s.vacLoss*12)}/yr`],
+    ['Expiring ≤ 6 mo',String(s.exp6),`${s.occ?pct(s.exp6/s.occ,0):'0%'} of leases · ${s.exp6Mtm>=0?'+':'−'}${fmt$(Math.abs(s.exp6Mtm))}/mo to market`]
+  ];
+  $('kpis').innerHTML=k.map(([l,v,x])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${x}</div></div>`).join('');
+}
+
+/* ---------- property table ---------- */
+function renderPropTable(){
+  const H=['Property','Units','Occupied','Occ. (%)','Econ. Occ. (%)','Avg SF','In-Place Rent ($)','Market Rent ($)','In-Place ($/SF)','Loss-to-Lease ($/mo)','LTL (%)','Vacancy Loss ($/mo)','Exp. ≤6 Mo'];
+  const line=(name,s)=>[esc(name),s.n,s.occ,pct(s.occPct),pct(s.econ),Math.round(s.avgSf).toLocaleString(),fmt$(s.avgCur),fmt$(s.avgMkt),'$'+s.psf.toFixed(2),paren(s.ltl),pct(s.ltlPct),fmt$(s.vacLoss),s.exp6];
+  let h=`<thead><tr>${H.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>`;
+  PROPS.forEach(p=>{const s=stats(rows.filter(r=>r.p===p));
+    h+=`<tr tabindex="0" data-p="${esc(p)}" class="${p===sel?'sel':''}" aria-label="Focus on ${esc(p)}">${line(p,s).map(c=>`<td>${c}</td>`).join('')}</tr>`});
+  h+=`<tr class="total" tabindex="0" data-p="All">${line('Portfolio',stats(rows)).map(c=>`<td>${c}</td>`).join('')}</tr></tbody>`;
+  $('ptab').innerHTML=h;
+  $('ptab').querySelectorAll('tr[tabindex]').forEach(tr=>{tr.onclick=()=>setSel(tr.dataset.p===sel?'All':tr.dataset.p);tr.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();tr.click()}}});
+}
+
+/* ---------- tooltip ---------- */
+const tip=$('tip');
+function showTip(e,html){tip.innerHTML=html;tip.hidden=false;moveTip(e)}
+function moveTip(e){const w=tip.offsetWidth,h=tip.offsetHeight;let x=e.clientX+14,y=e.clientY+14;if(x+w>innerWidth-8)x=e.clientX-w-14;if(y+h>innerHeight-8)y=e.clientY-h-14;tip.style.left=x+'px';tip.style.top=y+'px'}
+const hideTip=()=>tip.hidden=true;
+const tr2=(a,b)=>`<div class="r"><span>${a}</span><span>${b}</span></div>`;
+function bindTips(svg){svg.querySelectorAll('[data-tip]').forEach(el=>{el.addEventListener('mouseenter',e=>showTip(e,decodeURIComponent(el.dataset.tip)));el.addEventListener('mousemove',moveTip);el.addEventListener('mouseleave',hideTip)})}
+const T=s=>encodeURIComponent(s);
+
+/* ---------- chart 1: occupancy by property ---------- */
+function chartOcc(){
+  const d=PROPS.map(p=>({p,...stats(rows.filter(r=>r.p===p))})).sort((a,b)=>b.occPct-a.occPct);
+  const all=stats(rows);
+  const best=d[0], worst=d[d.length-1];
+  $('c1t').textContent=`${worst.p} trails at ${pct(worst.occPct)}, ${((all.occPct-worst.occPct)*100).toFixed(1)} pts below the portfolio`;
+  const W=380,L=116,R=44,rowH=34,top=8,H=top+d.length*rowH+26,x0=80,x1=100;
+  const sx=v=>L+(v*100-x0)/(x1-x0)*(W-L-R);
+  let g='';
+  for(let t=x0;t<=x1;t+=5){g+=`<line x1="${sx(t/100)}" x2="${sx(t/100)}" y1="${top-4}" y2="${H-22}" stroke="var(--rule)" stroke-width="1"/><text x="${sx(t/100)}" y="${H-6}" text-anchor="middle" font-size="11" fill="var(--fg2)">${t}%</text>`}
+  const ap=sx(all.occPct);
+  g+=`<line x1="${ap}" x2="${ap}" y1="${top-4}" y2="${H-22}" stroke="var(--fg2)" stroke-dasharray="3 3" stroke-width="1.5"/>`;
+  d.forEach((r,i)=>{const y=top+i*rowH, w=sx(r.occPct)-L, on=sel==='All'||sel===r.p;
+    g+=`<g data-tip="${T(`<b>${esc(r.p)}</b>${tr2('Occupancy',pct(r.occPct))}${tr2('Leased',r.occ+' / '+r.n)}${tr2('Vacant',r.vac)}${tr2('Vacancy loss',fmt$(r.vacLoss)+'/mo')}`)}" style="cursor:pointer" data-p="${esc(r.p)}">
+      <rect x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent"/>
+      <text x="${L-10}" y="${y+rowH/2+4}" text-anchor="end" font-size="12" fill="var(--fg)" font-weight="${sel===r.p?700:400}">${esc(r.p)}</text>
+      <rect x="${L}" y="${y+8}" width="${Math.max(w,2)}" height="${rowH-16}" rx="2" fill="${on?'var(--mark)':'var(--mark-dim)'}"/>
+      <text x="${L+w+6}" y="${y+rowH/2+4}" font-size="12" fill="var(--fg2)">${pct(r.occPct)}</text></g>`});
+  g+=`<text x="${ap+4}" y="${top+4}" font-size="10" fill="var(--fg2)">Portfolio ${pct(all.occPct)}</text>`;
+  $('c1').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Occupancy by property">${g}</svg>`;
+  const svg=$('c1').querySelector('svg');bindTips(svg);
+  svg.querySelectorAll('g[data-p]').forEach(el=>el.onclick=()=>setSel(el.dataset.p===sel?'All':el.dataset.p));
+  $('c1').insertAdjacentHTML('beforeend',`<p class="src">Axis starts at 80%. Dashed line = portfolio average. Click a bar to focus.</p>`);
+}
+
+/* ---------- chart 2: rent vs market by unit type ---------- */
+function chartMix(){
+  const rs=scope();
+  const d=TYPES.map(t=>{const s=stats(rs.filter(r=>r.t===t));return {t,...s}}).filter(r=>r.occ>0);
+  const gap=d.slice().sort((a,b)=>b.ltlPct-a.ltlPct)[0];
+  $('c2t').textContent=gap&&gap.ltlPct>0?`${gap.t} units sit furthest below market (${pct(gap.ltlPct)} loss-to-lease)`:'In-place rents are at or above market across unit types';
+  const W=380,L=50,R=50,grp=58,top=4,H=top+d.length*grp+24;
+  const mx=Math.ceil(Math.max(...d.map(r=>Math.max(r.avgCur,r.avgMkt)))/500)*500;
+  const sx=v=>L+v/mx*(W-L-R);
+  let g='';
+  for(let t=0;t<=mx;t+=500){g+=`<line x1="${sx(t)}" x2="${sx(t)}" y1="0" y2="${H-20}" stroke="var(--rule)"/><text x="${sx(t)}" y="${H-4}" text-anchor="middle" font-size="11" fill="var(--fg2)">$${t.toLocaleString()}</text>`}
+  d.forEach((r,i)=>{const y=top+i*grp, bh=18;
+    const tipH=T(`<b>${r.t}</b>${tr2('In-place avg',fmt$(r.avgCur))}${tr2('Market avg',fmt$(r.avgMkt))}${tr2('Loss-to-lease',pct(r.ltlPct))}${tr2('Occupied',r.occ+' / '+r.n)}${tr2('In-place $/SF','$'+r.psf.toFixed(2))}`);
+    g+=`<g data-tip="${tipH}"><rect x="0" y="${y}" width="${W}" height="${grp}" fill="transparent"/>
+      <text x="${L-10}" y="${y+bh+6}" text-anchor="end" font-size="12" fill="var(--fg)">${r.t}</text>
+      <rect x="${L}" y="${y+4}" width="${sx(r.avgCur)-L}" height="${bh}" rx="2" fill="var(--mark)"/>
+      <rect x="${L}" y="${y+4+bh+2}" width="${sx(r.avgMkt)-L}" height="${bh}" rx="2" fill="var(--bench)"/>
+      <text x="${sx(r.avgCur)+6}" y="${y+4+bh-5}" font-size="11" fill="var(--fg2)">${fmt$(r.avgCur)}</text>
+      <text x="${sx(r.avgMkt)+6}" y="${y+4+2*bh-3}" font-size="11" fill="var(--muted)">${fmt$(r.avgMkt)}</text></g>`});
+  $('c2').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="In-place versus market rent by unit type">${g}</svg>`;
+  bindTips($('c2').querySelector('svg'));
+}
+
+/* ---------- chart 3: expirations ---------- */
+function chartExp(){
+  const occ=scope().filter(r=>r.st==='O');
+  const months=[];const d0=new Date(2026,9,1);
+  for(let i=0;i<18;i++){const d=new Date(d0.getFullYear(),d0.getMonth()+i,1);months.push({k:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),lab:d.toLocaleString('en-US',{month:'short'}),yr:d.getFullYear(),n:0,cur:0,mkt:0})}
+  occ.forEach(r=>{const m=months.find(x=>x.k===r.le.slice(0,7));if(m){m.n++;m.cur+=r.cur;m.mkt+=r.mkt}});
+  const nx12=months.slice(0,12).reduce((s,m)=>s+m.n,0);
+  const pk=months.reduce((a,b)=>b.n>a.n?b:a);
+  $('c3t').textContent=`${nx12} leases (${occ.length?pct(nx12/occ.length,0):'0%'} of occupied) roll in the next 12 months; ${pk.lab} ${pk.yr} is the peak with ${pk.n}`;
+  const W=1000,L=34,R=8,top=18,H=230,base=H-40;
+  const mx=Math.max(4,Math.ceil(Math.max(...months.map(m=>m.n))/4)*4);
+  const bw=(W-L-R)/months.length;
+  const sy=v=>base-v/mx*(base-top);
+  let g='';
+  for(let t=0;t<=mx;t+=mx/4){g+=`<line x1="${L}" x2="${W-R}" y1="${sy(t)}" y2="${sy(t)}" stroke="var(--rule)"/><text x="${L-6}" y="${sy(t)+4}" text-anchor="end" font-size="11" fill="var(--fg2)">${t}</text>`}
+  months.forEach((m,i)=>{const x=L+i*bw+bw*.18,w=bw*.64,h=base-sy(m.n);const mtm=m.mkt-m.cur;
+    const tt=T(`<b>${m.lab} ${m.yr}</b>${tr2('Leases expiring',m.n)}${tr2('In-place rent',fmt$(m.cur)+'/mo')}${tr2('Market rent',fmt$(m.mkt)+'/mo')}${tr2('Mark-to-market',(mtm>=0?'+':'−')+fmt$(Math.abs(mtm))+'/mo')}`);
+    g+=`<g data-tip="${tt}"><rect x="${L+i*bw}" y="${top}" width="${bw}" height="${base-top}" fill="transparent"/>
+      ${m.n?`<rect x="${x}" y="${sy(m.n)}" width="${w}" height="${h}" rx="2" fill="${i<6?'var(--mark)':'var(--mark-dim)'}"/>`:''}
+      ${m.n?`<text x="${x+w/2}" y="${sy(m.n)-5}" text-anchor="middle" font-size="11" fill="var(--fg2)">${m.n}</text>`:''}
+      <text x="${x+w/2}" y="${base+15}" text-anchor="middle" font-size="11" fill="var(--fg2)">${m.lab}</text>
+      ${(i===0||m.lab==='Jan')?`<text x="${x+w/2}" y="${base+30}" text-anchor="middle" font-size="10" fill="var(--muted)">${m.yr}</text>`:''}</g>`});
+  g+=`<line x1="${L}" x2="${W-R}" y1="${base}" y2="${base}" stroke="var(--rule-strong)"/>`;
+  $('c3').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Lease expirations by month">${g}</svg>`;
+  bindTips($('c3').querySelector('svg'));
+  $('c3').insertAdjacentHTML('beforeend',`<div class="legend" style="margin-top:6px"><span><i style="background:var(--mark)"></i>Next 6 months</span><span><i style="background:var(--mark-dim)"></i>Months 7 to 18</span></div>`);
+}
+
+/* ---------- unit mix table ---------- */
+function renderMix(){
+  const rs=scope();
+  const H=['Unit Type','Units','Mix (%)','Occ. (%)','Avg SF','In-Place Rent ($)','Market Rent ($)','In-Place ($/SF)','Market ($/SF)','Loss-to-Lease ($/mo)','LTL (%)','Below / Above Mkt'];
+  const line=(name,s,rr)=>{const msf=rr.filter(r=>r.st==='O');const mpsf=msf.reduce((a,r)=>a+r.sf,0);return [name,s.n,pct(s.n/rs.length),pct(s.occPct),Math.round(s.avgSf).toLocaleString(),fmt$(s.avgCur),fmt$(s.avgMkt),'$'+s.psf.toFixed(2),'$'+(mpsf?msf.reduce((a,r)=>a+r.mkt,0)/mpsf:0).toFixed(2),paren(s.ltl),pct(s.ltlPct),`${s.below} / ${s.above}`]};
+  let h=`<thead><tr>${H.map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>`;
+  TYPES.forEach(t=>{const rr=rs.filter(r=>r.t===t);if(!rr.length)return;h+=`<tr>${line(t,stats(rr),rr).map(c=>`<td>${c}</td>`).join('')}</tr>`});
+  h+=`<tr class="total">${line('Total',stats(rs),rs).map(c=>`<td>${c}</td>`).join('')}</tr></tbody>`;
+  $('mtab').innerHTML=h;
+}
+
+/* ---------- rent roll ---------- */
+const COLS=[['p','Property','l'],['u','Unit'],['t','Type','l'],['sf','SF'],['st','Status','l'],['ten','Tenant','l'],['le','Lease End'],['mo','Mo. Left'],['cur','In-Place ($)'],['mkt','Market ($)'],['var','vs. Market ($)'],['vp','vs. Market (%)']];
+function renderRoll(){
+  const f=$('fstat').value,q=$('q').value.trim().toLowerCase();
+  let rs=scope().filter(r=>{
+    if(f==='O'&&r.st!=='O')return false; if(f==='V'&&r.st!=='V')return false;
+    if(f==='below'&&!(r.st==='O'&&r.cur<r.mkt))return false; if(f==='above'&&!(r.st==='O'&&r.cur>r.mkt))return false;
+    if(f==='exp6'&&!(r.st==='O'&&r.mo<=6))return false;
+    if(q&&!(`${r.ten||''} ${r.u} ${r.t} ${r.p}`.toLowerCase().includes(q)))return false; return true});
+  rs.forEach(r=>r.vp=r.var==null?null:r.var/r.mkt);
+  rs.sort((a,b)=>{let x=a[sortKey],y=b[sortKey];if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;
+    if(sortKey==='p'){const c=PROPS.indexOf(x)-PROPS.indexOf(y);return c?c*sortDir:a.u-b.u}
+    return (x<y?-1:x>y?1:0)*sortDir});
+  let h=`<thead><tr>${COLS.map(([k,l,a])=>`<th class="${a||''}" aria-sort="${sortKey===k?(sortDir>0?'ascending':'descending'):'none'}"><button type="button" data-k="${k}">${l}<span class="arr">${sortKey===k?(sortDir>0?'▲':'▼'):'↕'}</span></button></th>`).join('')}</tr></thead><tbody>`;
+  rs.forEach(r=>{h+=`<tr><td class="l">${esc(r.p)}</td><td>${r.u}</td><td class="l">${r.t}</td><td>${r.sf.toLocaleString()}</td>
+    <td class="l"><span class="pill ${r.st==='O'?'o':'v'}">${r.st==='O'?'Occupied':'Vacant'}</span></td><td class="l">${esc(r.ten)||'<span style="color:var(--muted)">–</span>'}</td>
+    <td>${r.le?new Date(r.le+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'–'}</td><td>${r.mo==null?'–':r.mo.toFixed(1)}</td>
+    <td>${r.st==='O'?fmt$(r.cur):'–'}</td><td>${fmt$(r.mkt)}</td>
+    <td class="${r.var<0?'neg':r.var>0?'pos':''}">${r.var==null?'–':(r.var>0?'+':'')+paren(r.var)}</td>
+    <td class="${r.var<0?'neg':r.var>0?'pos':''}">${r.vp==null?'–':(r.vp<0?'('+pct(-r.vp)+')':(r.vp>0?'+':'')+pct(r.vp))}</td></tr>`});
+  if(!rs.length)h+=`<tr><td colspan="${COLS.length}" class="l" style="color:var(--muted)">No units match this filter. Try "All units" or clear the search.</td></tr>`;
+  $('rtab').innerHTML=h+'</tbody>';
+  $('count').textContent=`${rs.length} unit${rs.length===1?'':'s'}`;
+  $('rtab').querySelectorAll('th button').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(sortKey===k)sortDir*=-1;else{sortKey=k;sortDir=(['cur','mkt','sf','mo'].includes(k))?-1:1}renderRoll()});
+}
+$('fstat').onchange=renderRoll;$('q').oninput=renderRoll;
+
+function render(){renderSwitch();renderKpis();renderPropTable();chartOcc();chartMix();chartExp();renderMix();renderRoll()}
+render();
+</script>
+
+</body></html>
